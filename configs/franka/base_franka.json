@@ -1,0 +1,26 @@
+{
+    "env_name": "FrankaGraspEnv",
+    "env_config": {
+        "render": true,
+        "num_memory_steps": 30
+    },
+    "num_trainer_workers": 4, 
+    "policies_to_train": {
+        "policy": true
+    },
+    "policy_classes": {
+        "policy": "sac"
+    },
+    "policy_configs": {
+        "policy": {
+            "policy_model": {
+                "custom_model": "dmap_policy",
+                "embedding_size": 4
+            }
+        }
+    },
+    "trainer_class": "sac",
+    "episodes_total": 100000,
+    "logdir": "output",
+    "trial_name": "dmap_franka"
+}

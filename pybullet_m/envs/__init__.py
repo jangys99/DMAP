@@ -98,3 +98,11 @@ gym.envs.registration.register(
     max_episode_steps=1000,
     reward_threshold=3000.0,
 )
+
+# franka 추가
+gym.envs.registration.register(
+    id="FrankaGraspBulletEnv-v0",
+    entry_point="pybullet_m.envs.franka:FrankaGraspEnv",
+    max_episode_steps=1000,
+    reward_threshold=2500.0,
+)

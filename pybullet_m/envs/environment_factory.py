@@ -3,6 +3,8 @@ import pybullet_m.envs.ant
 import pybullet_m.envs.hopper
 import pybullet_m.envs.walker
 import pybullet_m.envs.half_cheetah
+# franka 추가
+import pybullet_m.envs.franka
 from ray.tune import register_env
 
 
@@ -67,6 +69,14 @@ class EnvironmentFactory:
             return gym.make("CustomWalker2DBulletEnv-v0", **kwargs)
         elif env_name == "CustomHalfCheetahBulletEnv":
             return gym.make("CustomHalfCheetahBulletEnv-v0", **kwargs)
+        
+        # franka 추가
+        elif env_name == "FrankaGraspEnv":
+            return gym.make("FrankaGraspBulletEnv-v0", **kwargs)
+        # DMAP 학습용 Franka (History 포함)
+        elif env_name == "AdaptFrankaGraspEnv":
+            return gym.make("FrankaGraspBulletEnv-v0", include_adapt_state=True, **kwargs)
+        
         else:
             raise ValueError("Unknown environment name: ", env_name)
 
