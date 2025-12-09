@@ -415,3 +415,63 @@ def perturb_hopper_xml(
     update_pos(torso_root, body_pos_diff)
 
     tree.write(out_path)
+
+
+def perturb_franka_urdf(base_path, out_path, length_scale=1.0, thickness_scale=1.0):
+    """
+    Franka Panda 로봇의 링크 길이와 두께를 변경하여 새로운 URDF로 저장합니다.
+    - length_scale: 링크 길이 배율 (Joint Origin 이동 + Mesh Z축 스케일링)
+    - thickness_scale: 링크 두께 배율 (Mesh X, Y축 스케일링)
+    """
+    tree = ET.parse(base_path)
+    root = tree.getroot()
+
+    # [핵심] 변형할 링크와 그 링크의 길이를 결정하는 '다음 관절'을 짝지어 정의합니다.
+    # 구조: "Link 이름": "이 Link의 끝에 붙어있는 Joint 이름"
+    # Panda는 주로 link2, link3, link4, link5가 팔의 길이를 담당합니다.
+    perturbation_map = {
+        "panda_link2": "panda_joint3", 
+        "panda_link3": "panda_joint4",
+        "panda_link4": "panda_joint5",
+        "panda_link5": "panda_joint6"
+    }
+
+    # 1. 매핑된 파츠들을 순회하며 수정
+    for link_name, next_joint_name in perturbation_map.items():
+        
+        # --- (1) 살(Mesh) 늘리기: 해당 Link의 메쉬 스케일 수정 ---
+        for link in root.findall("link"):
+            if link.get("name") == link_name:
+                for tag in ["visual", "collision"]:
+                    element = link.find(tag)
+                    if element is None: continue
+                    
+                    geometry = element.find("geometry")
+                    if geometry is None: continue
+                    
+                    mesh = geometry.find("mesh")
+                    if mesh is not None:
+                        # 기존 스케일 값 읽기 (없으면 1 1 1)
+                        # Franka 메쉬는 Z축이 길이 방향인 경우가 많음
+                        
+                        # X, Y는 두께(thickness), Z는 길이(length)를 적용
+                        # 시각적으로 틈이 안 생기게 하려면 Z축도 늘려야 함!
+                        new_scale = f"{thickness_scale} {thickness_scale} {length_scale}"
+                        mesh.set("scale", new_scale)
+
+        # --- (2) 뼈(Joint) 늘리기: 다음 관절(Next Joint)의 위치 밀어내기 ---
+        for joint in root.findall("joint"):
+            if joint.get("name") == next_joint_name:
+                origin = joint.find("origin")
+                if origin is None: continue
+                
+                # 현재 관절의 위치(xyz) 벡터 가져오기
+                xyz = [float(x) for x in origin.get("xyz").split()]
+                
+                # 벡터 전체에 스케일을 곱해 거리를 멀어지게 함
+                # (Z축뿐만 아니라 꺾여있는 관절의 경우 벡터 방향대로 밀어내야 함)
+                new_xyz = [x * length_scale for x in xyz]
+                
+                origin.set("xyz", f"{new_xyz[0]} {new_xyz[1]} {new_xyz[2]}")
+
+    tree.write(out_path)
